@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Bot, User } from 'lucide-react';
+import { GoogleGenAI } from '@google/genai';
 import ReactMarkdown from 'react-markdown';
+
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
 export default function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,6 +14,7 @@ export default function AIChatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatRef = useRef<any>(null);
 
   useEffect(() => {
     const handleOpen = () => setIsOpen(true);
@@ -22,6 +26,21 @@ export default function AIChatbot() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    if (!chatRef.current) {
+      chatRef.current = ai.chats.create({
+        model: 'gemini-2.0-flash-exp', // Or suitable model
+        config: {
+          systemInstruction: `You are a helpful and professional AI real estate advisor for Summit Estate Nigeria. 
+          You help users find land in Abuja, explain documentation (C of O, R of O), and provide investment advice.
+          Keep answers concise, professional, and persuasive.
+          If asked about prices, give realistic estimates (e.g., Lugbe: 15M-30M, Maitama: 100M+).
+          Always encourage users to book an inspection.`,
+        }
+      });
+    }
+  }, []);
+
   const handleSend = async () => {
     if (!input.trim()) return;
 
@@ -31,33 +50,11 @@ export default function AIChatbot() {
     setIsLoading(true);
 
     try {
-      // Map history correctly for the Google Gen AI format, excluding the initial system message if needed, 
-      // but let's send previous back-and-forth as history
-      const historyToSend = messages.slice(1).map(msg => ({
-        role: msg.role === 'model' ? 'model' : 'user',
-        parts: [{ text: msg.text }]
-      }));
-
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userMessage,
-          history: historyToSend,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('API backend error');
-      }
-
-      const data = await response.json();
-      setMessages(prev => [...prev, { role: 'model', text: data.text }]);
+      const response = await chatRef.current.sendMessage({ message: userMessage });
+      setMessages(prev => [...prev, { role: 'model', text: response.text }]);
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages(prev => [...prev, { role: 'model', text: 'Sorry, I encountered an error connecting to the server. Please try again later.' }]);
+      setMessages(prev => [...prev, { role: 'model', text: 'Sorry, I encountered an error. Please try again later.' }]);
     } finally {
       setIsLoading(false);
     }
