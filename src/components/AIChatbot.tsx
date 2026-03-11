@@ -29,7 +29,7 @@ export default function AIChatbot() {
   useEffect(() => {
     if (!chatRef.current) {
       chatRef.current = ai.chats.create({
-        model: 'gemini-2.0-flash-exp', // Or suitable model
+        model: 'gemini-1.5-flash',
         config: {
           systemInstruction: `You are a helpful and professional AI real estate advisor for Summit Estate Nigeria. 
           You help users find land in Abuja, explain documentation (C of O, R of O), and provide investment advice.

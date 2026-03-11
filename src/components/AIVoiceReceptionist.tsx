@@ -28,7 +28,7 @@ export default function AIVoiceReceptionist() {
       setIsConnecting(true);
       setTranscript('Connecting to AI Receptionist...');
 
-      // 1. Setup Audio Context
+      // 1. Setup Audio Context - Capture at 16kHz as required by Gemini
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
 
       // 2. Get Microphone Access
@@ -40,7 +40,7 @@ export default function AIVoiceReceptionist() {
 
       // 4. Connect Gemini Live API
       const sessionPromise = ai.live.connect({
-        model: "gemini-2.0-flash-exp",
+        model: "models/gemini-2.0-flash", // Using the standard production model name
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -158,7 +158,7 @@ export default function AIVoiceReceptionist() {
     isPlayingRef.current = true;
     const audioData = audioQueueRef.current.shift()!;
 
-    const audioBuffer = audioContextRef.current.createBuffer(1, audioData.length, 24000); // Gemini TTS is 24kHz
+    const audioBuffer = audioContextRef.current.createBuffer(1, audioData.length, 24000); // Gemini Live Output is 24kHz
     audioBuffer.getChannelData(0).set(audioData);
 
     const source = audioContextRef.current.createBufferSource();
